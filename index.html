@@ -3,35 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Магия — Меню</title>
+    <title>Магия</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Фоновые слои для магического вайба -->
+    <!-- Фоновые слои -->
     <div class="bg-stars"></div>
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
     <div class="bg-glow bg-glow-3"></div>
     <canvas id="particles"></canvas>
 
-    <!-- Меню -->
-    <main class="menu">
+    <!-- Кнопка "Главная" — видна только на экране миров и создания -->
+    <button class="home-btn hidden" id="home-btn" title="На главную">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10.5L12 3l9 7.5"/>
+            <path d="M5 9.5V21h14V9.5"/>
+        </svg>
+        <span>Главная</span>
+    </button>
+
+    <!-- ===== ЭКРАН: МЕНЮ ===== -->
+    <main class="screen screen-active" id="screen-menu">
         <div class="menu-frame">
             <h1 class="menu-title">Магия</h1>
-            <p class="menu-subtitle">частицы · зёрна · текст</p>
-
             <div class="menu-buttons">
-                <button class="magic-btn" data-action="visualize">
+                <button class="magic-btn" data-goto="worlds">
                     <span class="btn-glow"></span>
-                    <span class="btn-text">Визуализация</span>
+                    <span class="btn-text">Миры</span>
                 </button>
-                <button class="magic-btn" data-action="edit">
+                <button class="magic-btn" data-goto="edit">
                     <span class="btn-glow"></span>
                     <span class="btn-text">Редакция</span>
                 </button>
             </div>
         </div>
     </main>
+
+    <!-- ===== ЭКРАН: МИРЫ ===== -->
+    <main class="screen" id="screen-worlds">
+        <div class="worlds-frame">
+            <h2 class="screen-title">Миры</h2>
+
+            <div class="worlds-list" id="worlds-list">
+                <!-- Сюда рендерятся ряды миров -->
+            </div>
+
+            <button class="magic-btn create-world-btn" id="create-world-btn">
+                <span class="btn-glow"></span>
+                <span class="btn-text">Создать мир</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- ===== ЭКРАН: СОЗДАНИЕ МИРА (2 шага) ===== -->
+    <main class="screen" id="screen-create">
+        <div class="create-frame">
+
+            <!-- Шаг 1: название -->
+            <div class="create-step" id="step-name">
+                <h2 class="screen-title">Название мира</h2>
+                <p class="step-hint">До 10 символов</p>
+                <input type="text" id="input-name" class="magic-input" maxlength="10" placeholder="Мир 1" autocomplete="off">
+                <div class="step-counter" id="counter-name">0 / 10</div>
+
+                <div class="step-actions">
+                    <button class="magic-btn" id="next-to-desc">
+                        <span class="btn-glow"></span>
+                        <span class="btn-text">Далее</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Шаг 2: описание -->
+            <div class="create-step hidden" id="step-desc">
+                <button class="back-arrow" id="back-to-name" title="Назад">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5"/>
+                        <path d="M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <h2 class="screen-title">Описание мира</h2>
+                <p class="step-hint">До 75 символов, необязательно</p>
+                <textarea id="input-desc" class="magic-input magic-textarea" maxlength="75" placeholder="Кратко опишите мир..." rows="3"></textarea>
+                <div class="step-counter" id="counter-desc">0 / 75</div>
+
+                <div class="step-actions">
+                    <button class="magic-btn" id="finish-create">
+                        <span class="btn-glow"></span>
+                        <span class="btn-text">Создать мир</span>
+                    </button>
+                    <button class="magic-btn magic-btn-ghost" id="cancel-to-name">
+                        <span class="btn-glow"></span>
+                        <span class="btn-text">Назад</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ===== ЭКРАН: ПЕРЕИМЕНОВАНИЕ ===== -->
+    <main class="screen" id="screen-rename">
+        <div class="create-frame">
+            <button class="back-arrow" id="rename-back" title="Назад">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"/>
+                    <path d="M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h2 class="screen-title">Переименовать мир</h2>
+            <p class="step-hint">До 10 символов</p>
+            <input type="text" id="input-rename" class="magic-input" maxlength="10" autocomplete="off">
+            <div class="step-counter" id="counter-rename">0 / 10</div>
+            <div class="step-actions">
+                <button class="magic-btn" id="finish-rename">
+                    <span class="btn-glow"></span>
+                    <span class="btn-text">Сохранить</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===== ТОСТ "УСПЕШНО СОЗДАН" ===== -->
+    <div class="toast hidden" id="toast">
+        <div class="toast-inner">
+            <div class="toast-icon">✦</div>
+            <div class="toast-text" id="toast-text">Мир успешно создан</div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
