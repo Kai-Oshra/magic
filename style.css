@@ -1,317 +1,437 @@
-// ============ ФОНОВЫЕ ЧАСТИЦЫ ============
-const canvas = document.getElementById('particles');
-const ctx = canvas.getContext('2d');
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Проект: Лоскутное шитье</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+    body { background-color: #fdfbff; color: #4a3d52; min-height: 100vh; display: flex; flex-direction: column; }
 
-let W, H;
-function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
-const PALETTE = [
-    [140, 100, 255],
-    [90, 150, 255],
-    [200, 120, 255],
-    [120, 200, 255],
-];
-
-class FloatingParticle {
-    constructor() { this.reset(); }
-    reset() {
-        this.x = Math.random() * W;
-        this.y = Math.random() * H;
-        this.size = 0.8 + Math.random() * 2.2;
-        this.speedX = (Math.random() - 0.5) * 0.25;
-        this.speedY = -0.15 - Math.random() * 0.35;
-        this.alpha = 0.2 + Math.random() * 0.6;
-        this.pulse = Math.random() * Math.PI * 2;
-        this.pulseSpeed = 0.01 + Math.random() * 0.02;
-        this.color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    header {
+        background: linear-gradient(135deg, #f7c8d8, #b8d8f0, #b8e6cf);
+        color: #4a3d52;
+        text-align: center;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.08);
     }
-    update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-        this.pulse += this.pulseSpeed;
-        if (this.y < -10 || this.x < -10 || this.x > W + 10) {
-            this.reset();
-            this.y = H + 10;
-        }
+    header h1 { font-size: 22px; margin-bottom: 5px; }
+    header p { font-size: 14px; opacity: 0.85; }
+
+    .main-container { flex: 1; max-width: 800px; width: 100%; margin: 15px auto; padding: 15px 15px 90px; }
+
+    .content-section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        display: none;
+        min-height: 300px;
+        border-top: 6px solid transparent;
     }
-    draw() {
-        const a = this.alpha * (0.6 + 0.4 * Math.sin(this.pulse));
-        const [r, g, b] = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
-        ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${a})`;
-        ctx.shadowBlur = 8;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+    .content-section.active { display: block; }
+
+    #sec1 { border-top-color: #f7c8d8; }
+    #sec2 { border-top-color: #b8d8f0; }
+    #sec3 { border-top-color: #b8e6cf; }
+
+    #sec1 h2 { color: #d97aa0; border-bottom-color: #fbe4ec; }
+    #sec2 h2 { color: #5a9bd4; border-bottom-color: #e0eefb; }
+    #sec3 h2 { color: #5cbf94; border-bottom-color: #e0f5ec; }
+
+    h2 { margin-bottom: 12px; border-bottom: 2px solid #f3ebe1; padding-bottom: 6px; font-size: 18px; }
+    h3 { color: #6b5a78; margin-bottom: 8px; font-size: 16px; }
+    p { font-size: 14px; line-height: 1.5; margin-bottom: 10px; text-align: justify; }
+    ul { margin-left: 20px; margin-bottom: 10px; font-size: 14px; }
+    li { margin-bottom: 5px; }
+
+    .layout-wrapper { display: flex; flex-direction: column; gap: 15px; }
+    .img-part { display: flex; justify-content: center; align-items: flex-start; }
+    .img-part img { width: 100%; max-width: 320px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .text-part { flex: 1; }
+
+    .sub-menu { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; background: #f0faf5; padding: 6px; border-radius: 8px; }
+    .sub-btn {
+        flex: 1; min-width: 90px;
+        background: white;
+        border: 1px solid #cdeee0;
+        padding: 6px 4px;
+        font-size: 12px; font-weight: bold;
+        border-radius: 6px; cursor: pointer; text-align: center;
+        color: #4a7a65;
+        transition: 0.2s;
     }
-}
+    .sub-btn.active { background: #8fd9b6; color: white; border-color: #8fd9b6; }
 
-const particles = Array.from({ length: 90 }, () => new FloatingParticle());
-
-function animate() {
-    ctx.clearRect(0, 0, W, H);
-    for (const p of particles) { p.update(); p.draw(); }
-    requestAnimationFrame(animate);
-}
-animate();
-
-// ============ СОСТОЯНИЕ ============
-const MAX_WORLDS = 10;
-const MAX_NAME_LEN = 10;
-const MAX_DESC_LEN = 75;
-
-const state = {
-    worlds: [],          // { id, name, desc }
-    nextId: 1,
-    renameId: null,      // id мира, который переименовываем
-};
-
-// ============ НАВИГАЦИЯ ============
-function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('screen-active'));
-    document.getElementById('screen-' + id).classList.add('screen-active');
-
-    const homeBtn = document.getElementById('home-btn');
-    if (id === 'menu') {
-        homeBtn.classList.add('hidden');
-        homeBtn.classList.remove('visible');
-    } else {
-        homeBtn.classList.remove('hidden');
-        requestAnimationFrame(() => homeBtn.classList.add('visible'));
+    .sub-content {
+        display: none;
+        background: #f6fdf9;
+        padding: 12px;
+        border-radius: 8px;
+        border-left: 4px solid #8fd9b6;
+        margin-bottom: 15px;
     }
-}
+    .sub-content.active { display: block; }
 
-document.querySelectorAll('[data-goto]').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const target = btn.dataset.goto;
-        if (target === 'worlds') { renderWorlds(); }
-        showScreen(target);
+    /* ---------- НИЖНЯЯ НАВИГАЦИЯ ---------- */
+    .bottom-nav { background: white; padding: 12px; box-shadow: 0 -4px 10px rgba(0,0,0,0.06); position: fixed; bottom: 0; left: 0; width: 100%; z-index: 100; }
+    .btn-grid { max-width: 500px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .main-btn {
+        background: #f4f4f8;
+        border: none;
+        color: #6b5a78;
+        padding: 10px 5px;
+        font-size: 13px; font-weight: bold;
+        border-radius: 8px; cursor: pointer; text-align: center;
+        transition: 0.2s;
+    }
+    .main-btn:nth-child(1).active { background: #f7c8d8; color: #7a3a55; }
+    .main-btn:nth-child(2).active { background: #b8d8f0; color: #2f5f8f; }
+    .main-btn:nth-child(3).active { background: #b8e6cf; color: #2f7a5a; }
+
+    /* ---------- ОБЩИЕ БЛОКИ ДЛЯ ВИДЖЕТОВ ---------- */
+    .widget {
+        margin-top: 25px;
+        background: #ffffff;
+        border: 2px solid #cdeee0;
+        border-radius: 12px;
+        padding: 18px;
+    }
+    .widget h3 { margin-top: 0; color: #4a7a65; font-size: 16px; margin-bottom: 8px; }
+    .widget .desc { font-size: 13px; color: #6b5a78; margin-bottom: 12px; }
+
+    .widget-btn {
+        display: inline-block;
+        margin-top: 12px;
+        background: #8fd9b6;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .widget-btn:hover { background: #6bc2a0; }
+
+    /* ---------- ФОРМА ---------- */
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #4a7a65; }
+    .form-group input[type="text"],
+    .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #cdeee0;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        resize: vertical;
+    }
+    .form-group input[type="file"] {
+        display: block;
+        margin-top: 5px;
+        font-size: 13px;
+    }
+    .file-name-preview { font-size: 12px; color: #888; margin-left: 8px; }
+
+    .success-message {
+        margin-top: 15px;
+        background: #d4f5e4;
+        color: #2f7a5a;
+        border-radius: 8px;
+        padding: 14px;
+        font-size: 14px;
+    }
+
+    /* ---------- КАЛЬКУЛЯТОР ---------- */
+    .calc-form label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #4a7a65; }
+    .calc-form select,
+    .calc-form input[type="number"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #cdeee0;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 12px;
+        font-family: inherit;
+    }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+    .result-item {
+        background: #f6fdf9;
+        border-left: 4px solid #8fd9b6;
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .result-icon { font-size: 20px; }
+    .result-value { font-size: 20px; font-weight: bold; color: #2f7a5a; }
+    .result-label { font-size: 12px; color: #6b5a78; }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Пэчворк: наука для старта, идеи для мастерства</h1>
+    <p>Выполнила: Мамедова Шалала, 8В класс. Руководитель: Фомичева О. А.</p>
+</header>
+
+<div class="main-container">
+
+    <!-- ===================== РАЗДЕЛ 1 ===================== -->
+    <div id="sec1" class="content-section active">
+        <h2>1. Автор и идея проекта</h2>
+        <div class="layout-wrapper">
+            <div class="img-part">
+                <img src="images/foto1.jpg" alt="Мамедова Шалала">
+            </div>
+            <div class="text-part">
+                <p><strong>Автор проекта:</strong> Меня зовут <strong>Мамедова Шалала</strong>, я ученица 8В класса. Данный сайт представляет мой творческий проект по технологии.</p>
+                <p><strong>Как родился проект:</strong> К нам в школьной мастерской обратилась учитель технологии <strong>Фомичева О. А.</strong> После уроков скопилось много обрезков тканей, и мне захотелось решить эту проблему экологично — дать лоскуткам вторую жизнь.</p>
+                <p><strong>Социальная цель и итог:</strong> В нашей школе принято дарить подарки мамам на праздник ко Дню матери. За два месяца я <strong>успешно сшила комплект из 70 уникальных прихваток-сувениров</strong> из остатков тканей! Мы вручим их родителям на празднике.</p>
+            </div>
+        </div>
+
+        <!-- БЛОК: ФОРМА «ПРИСОЕДИНИТЬСЯ» -->
+        <div class="widget">
+            <h3>🌍 Присоединяйтесь к нашей эко-мастерской!</h3>
+            <p class="desc">Вы тоже шьёте из лоскутков или хотите открыть такую мастерскую в своей школе? Поделитесь своей историей и фото работы, и мы добавим вас на нашу интерактивную платформу!</p>
+
+            <form id="join-form">
+                <div class="form-group">
+                    <label for="user-name">Ваше имя и фамилия:</label>
+                    <input type="text" id="user-name" required placeholder="Например: Шалала Мамедова">
+                </div>
+                <div class="form-group">
+                    <label for="user-school">Школа, класс и город:</label>
+                    <input type="text" id="user-school" required placeholder="Например: Школа №1, 8Б класс, Москва">
+                </div>
+                <div class="form-group">
+                    <label for="user-message">Расскажите о вашей работе или идее:</label>
+                    <textarea id="user-message" rows="4" required placeholder="Например: Мы сшили 10 эко-сумок из старых джинсов..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="user-file">📸 Загрузить фото вашего изделия</label>
+                    <input type="file" id="user-file" accept="image/*" required>
+                    <span id="file-name-preview" class="file-name-preview">Файл не выбран</span>
+                </div>
+                <button type="submit" class="widget-btn">Отправить работу на модерацию</button>
+            </form>
+
+            <div id="form-success-message" class="success-message" style="display: none;">
+                🚀 <strong>Ваша заявка успешно принята!</strong> Спасибо за вклад в сохранение планеты. После проверки куратором проекта (О. А. Фомичевой) ваша работа появится в нашей интерактивной галерее.
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== РАЗДЕЛ 2 ===================== -->
+    <div id="sec2" class="content-section">
+        <h2>2. История пэчворка</h2>
+        <div class="layout-wrapper">
+            <div class="img-part">
+                <img src="images/foto2.jpg" alt="История лоскутного шитья">
+            </div>
+            <div class="text-part">
+                <p>Изначально лоскутное шитье во всех странах рождалось из бережливости и дефицита тканей, но со временем стало искусством:</p>
+                <ul>
+                    <li><strong>Англия (XVI–XVII вв.):</strong> Из-за запрета на ввоз тканей ситец стал очень дорогим. Хозяйки бережно собирали мельчайшие обрезки для создания новых вещей.</li>
+                    <li><strong>Япония (XIX в.):</strong> Стиль «японский шёлк» (расшитый квилт). Изделия служили декоративными панно и украшались бахромой, кистями и кружевом.</li>
+                    <li><strong>Азербайджан:</strong> Самобытная техника <strong>«Гурама»</strong> (соединенный). Из кусков неправильной формы, подобно мозаике, сшивались коврики (гурма чий) и покрывала.</li>
+                    <li><strong>Россия (XVIII в.):</strong> Массовое шитье одеял из фабричного ситца. Известно, что лоскутное одеяло в подарок мужу сшила даже жена Петра I, Екатерина.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- БЛОК: КАЛЬКУЛЯТОР -->
+        <div class="widget">
+            <h3>🌱 Калькулятор эко-эффекта апсайклинга</h3>
+            <p class="desc">Узнайте, сколько прихваток можно сшить из ваших старых вещей!</p>
+
+            <div class="calc-form">
+                <label for="clothing-type">Выберите тип вещи:</label>
+                <select id="clothing-type">
+                    <option value="200" selected>Футболка / Рубашка (~200 г)</option>
+                    <option value="400">Толстовка / Свитшот (~400 г)</option>
+                    <option value="600">Джинсы / Брюки (~600 г)</option>
+                    <option value="150">Платье / Юбка (~150 г)</option>
+                    <option value="1000">Постельное белье / Простыня (~1000 г)</option>
+                </select>
+
+                <label for="clothing-count">Количество вещей (шт):</label>
+                <input type="number" id="clothing-count" value="1" min="1" max="100">
+
+                <button id="calculate-btn" class="widget-btn">Рассчитать эффект</button>
+            </div>
+
+            <div id="calc-results" style="display: none;">
+                <h4 style="margin-top: 15px; color:#4a7a65;">📊 Результат:</h4>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <span class="result-icon">🧵</span>
+                        <span class="result-value" id="res-items">0</span>
+                        <span class="result-label">прихваток можно сшить</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== РАЗДЕЛ 3 ===================== -->
+    <div id="sec3" class="content-section">
+        <h2>3. Технологии лоскутного шитья</h2>
+
+        <div class="sub-menu">
+            <button class="sub-btn active" onclick="showSub('sub1', this)">Колодец</button>
+            <button class="sub-btn" onclick="showSub('sub2', this)">Крейзи</button>
+            <button class="sub-btn" onclick="showSub('sub3', this)">Пицца</button>
+            <button class="sub-btn" onclick="showSub('sub4', this)">Роза йо-йо</button>
+            <button class="sub-btn" onclick="showSub('sub5', this)">Мэшвок</button>
+            <button class="sub-btn" onclick="showSub('sub6', this)">Аппликация</button>
+        </div>
+
+        <div id="sub1" class="sub-content active">
+            <div class="layout-wrapper">
+                <div class="img-part"><img src="images/foto3.jpg" alt="Колодец"></div>
+                <div class="text-part">
+                    <h3>Техника «Колодец» («Бревенчатая изба»)</h3>
+                    <p>Сборка цветных полос-«брёвнышек» по кругу или спирали вокруг центрального квадрата. Сюда же относится геометрический блок «Кристалл».</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="sub2" class="sub-content">
+            <div class="layout-wrapper">
+                <div class="img-part"><img src="images/foto4.jpg" alt="Крейзи"></div>
+                <div class="text-part">
+                    <h3>Крейзи-пэчворк</h3>
+                    <p>Хаотичное сшивание мелких лоскутов неправильной формы. Пример — «Крейзи-роза», где элементы настрачиваются по спирали от центра.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="sub3" class="sub-content">
+            <div class="layout-wrapper">
+                <div class="img-part"><img src="images/foto5.jpg" alt="Пицца"></div>
+                <div class="text-part">
+                    <h3>Техника «Пицца»</h3>
+                    <p>Мелкие кривые обрезки хаотично выкладываются на основу, накрываются прозрачной тканью и скрепляются декоративными строчками.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="sub4" class="sub-content">
+            <div class="layout-wrapper">
+                <div class="img-part"><img src="images/foto6.jpg" alt="Роза йо-йо"></div>
+                <div class="text-part">
+                    <h3>Французская роза</h3>
+                    <p>Объёмный цветок в стиле йо-йо из округлых лоскутов, наложенных друг на друга по принципу пирамиды.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="sub5" class="sub-content">
+            <div class="layout-wrapper">
+                <div class="img-part"><img src="images/foto7.jpg" alt="Мэшвок"></div>
+                <div class="text-part">
+                    <h3>Мэшвок</h3>
+                    <p>Техника сшивания лоскутов в виде сетки (mesh). Позволяет создавать объёмные и рельефные узоры за счёт чередования ткани и фона.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="sub6" class="sub-content">
+            <div class="layout-wrapper">
+                <div class="img-part"><img src="images/foto8.jpg" alt="Аппликация"></div>
+                <div class="text-part">
+                    <h3>Аппликация</h3>
+                    <p>Нашивание вырезанных фигур на основу. Может быть плоской и объёмной, часто сочетается с другими техниками пэчворка.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- НИЖНЯЯ НАВИГАЦИЯ -->
+<div class="bottom-nav">
+    <div class="btn-grid">
+        <button class="main-btn active" onclick="showSection('sec1', this)">Автор и идея</button>
+        <button class="main-btn" onclick="showSection('sec2', this)">История</button>
+        <button class="main-btn" onclick="showSection('sec3', this)">Техники</button>
+    </div>
+</div>
+
+<script>
+/* =============== ВКЛАДКИ =============== */
+function showSection(id, btn) {
+    document.querySelectorAll('.content-section').forEach(function(s) {
+        s.classList.remove('active');
     });
-});
+    document.getElementById(id).classList.add('active');
 
-document.getElementById('home-btn').addEventListener('click', () => {
-    showScreen('menu');
-});
-
-// ============ ТОСТ ============
-const toastEl = document.getElementById('toast');
-const toastText = document.getElementById('toast-text');
-let toastTimer = null;
-
-function showToast(text) {
-    toastText.textContent = text;
-    toastEl.classList.remove('hidden');
-    requestAnimationFrame(() => toastEl.classList.add('visible'));
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-        toastEl.classList.remove('visible');
-        setTimeout(() => toastEl.classList.add('hidden'), 500);
-    }, 2200);
+    document.querySelectorAll('.main-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    btn.classList.add('active');
 }
 
-// ============ ЭКРАН МИРОВ ============
-const worldsList = document.getElementById('worlds-list');
-const createWorldBtn = document.getElementById('create-world-btn');
+function showSub(id, btn) {
+    var parent = btn.closest('.content-section');
+    parent.querySelectorAll('.sub-content').forEach(function(s) {
+        s.classList.remove('active');
+    });
+    parent.querySelectorAll('.sub-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+}
 
-function renderWorlds() {
-    worldsList.innerHTML = '';
+/* =============== ФОРМА =============== */
+(function () {
+    var form = document.getElementById('join-form');
+    var fileInput = document.getElementById('user-file');
+    var filePreview = document.getElementById('file-name-preview');
+    var successBox = document.getElementById('form-success-message');
 
-    state.worlds.forEach(world => {
-        const row = document.createElement('div');
-        row.className = 'world-row';
-        row.dataset.id = world.id;
-
-        const info = document.createElement('div');
-        info.className = 'world-row-info';
-
-        const nameEl = document.createElement('div');
-        nameEl.className = 'world-row-name';
-        nameEl.textContent = world.name;
-
-        const descEl = document.createElement('div');
-        descEl.className = 'world-row-desc' + (world.desc ? '' : ' empty');
-        descEl.textContent = world.desc || 'без описания';
-
-        info.appendChild(nameEl);
-        info.appendChild(descEl);
-
-        const actions = document.createElement('div');
-        actions.className = 'world-row-actions';
-
-        // кнопка переименования
-        const renameBtn = document.createElement('button');
-        renameBtn.className = 'icon-btn';
-        renameBtn.title = 'Переименовать';
-        renameBtn.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9"/>
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-            </svg>
-        `;
-        renameBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openRename(world.id);
-        });
-
-        actions.appendChild(renameBtn);
-
-        row.appendChild(info);
-        row.appendChild(actions);
-
-        // клик по ряду (кроме кнопок) — "открыть мир" (пока просто лог)
-        row.addEventListener('click', () => {
-            console.log('Открыть мир:', world.name);
-            showToast('Мир: ' + world.name);
-        });
-
-        worldsList.appendChild(row);
+    fileInput.addEventListener('change', function () {
+        filePreview.textContent = this.files.length ? this.files[0].name : 'Файл не выбран';
     });
 
-    // Кнопка "Создать мир" — всегда под списком.
-    // Если миров 10 — скрываем.
-    if (state.worlds.length >= MAX_WORLDS) {
-        createWorldBtn.classList.add('hidden');
-    } else {
-        createWorldBtn.classList.remove('hidden');
-    }
-}
-
-// ============ СОЗДАНИЕ МИРА ============
-const inputName = document.getElementById('input-name');
-const inputDesc = document.getElementById('input-desc');
-const counterName = document.getElementById('counter-name');
-const counterDesc = document.getElementById('counter-desc');
-const stepName = document.getElementById('step-name');
-const stepDesc = document.getElementById('step-desc');
-
-// Шаг 1 → Шаг 2
-document.getElementById('next-to-desc').addEventListener('click', () => {
-    stepName.classList.add('hidden');
-    stepDesc.classList.remove('hidden');
-    // фокус на поле описания
-    setTimeout(() => inputDesc.focus(), 100);
-});
-
-// Шаг 2 → Шаг 1 (стрелочка и кнопка "Назад")
-function backToName() {
-    stepDesc.classList.add('hidden');
-    stepName.classList.remove('hidden');
-    setTimeout(() => inputName.focus(), 100);
-}
-document.getElementById('back-to-name').addEventListener('click', backToName);
-document.getElementById('cancel-to-name').addEventListener('click', backToName);
-
-// Счётчики символов
-inputName.addEventListener('input', () => {
-    const len = inputName.value.length;
-    counterName.textContent = `${len} / ${MAX_NAME_LEN}`;
-    counterName.classList.toggle('limit', len >= MAX_NAME_LEN);
-});
-
-inputDesc.addEventListener('input', () => {
-    const len = inputDesc.value.length;
-    counterDesc.textContent = `${len} / ${MAX_DESC_LEN}`;
-    counterDesc.classList.toggle('limit', len >= MAX_DESC_LEN);
-});
-
-// Открытие экрана создания — сбрасываем поля
-document.getElementById('create-world-btn').addEventListener('click', () => {
-    openCreate();
-});
-
-function openCreate() {
-    // Плейсхолдер с автоматическим именем
-    const defaultName = 'Мир ' + (state.worlds.length + 1);
-    inputName.value = '';
-    inputName.placeholder = defaultName;
-    inputDesc.value = '';
-    counterName.textContent = `0 / ${MAX_NAME_LEN}`;
-    counterDesc.textContent = `0 / ${MAX_DESC_LEN}`;
-    counterName.classList.remove('limit');
-    counterDesc.classList.remove('limit');
-
-    stepDesc.classList.add('hidden');
-    stepName.classList.remove('hidden');
-
-    showScreen('create');
-    setTimeout(() => inputName.focus(), 150);
-}
-
-// Финальное создание
-document.getElementById('finish-create').addEventListener('click', () => {
-    const defaultName = 'Мир ' + (state.worlds.length + 1);
-    const name = (inputName.value.trim() || defaultName).slice(0, MAX_NAME_LEN);
-    const desc = inputDesc.value.trim().slice(0, MAX_DESC_LEN);
-
-    state.worlds.push({
-        id: state.nextId++,
-        name,
-        desc,
-    });
-
-    showToast('Мир «' + name + '» успешно создан');
-    renderWorlds();
-    showScreen('worlds');
-});
-
-// ============ ПЕРЕИМЕНОВАНИЕ ============
-const inputRename = document.getElementById('input-rename');
-const counterRename = document.getElementById('counter-rename');
-const screenRename = document.getElementById('screen-rename');
-
-function openRename(id) {
-    const world = state.worlds.find(w => w.id === id);
-    if (!world) return;
-    state.renameId = id;
-    inputRename.value = world.name;
-    counterRename.textContent = `${world.name.length} / ${MAX_NAME_LEN}`;
-    counterRename.classList.remove('limit');
-    showScreen('rename');
-    setTimeout(() => { inputRename.focus(); inputRename.select(); }, 150);
-}
-
-inputRename.addEventListener('input', () => {
-    const len = inputRename.value.length;
-    counterRename.textContent = `${len} / ${MAX_NAME_LEN}`;
-    counterRename.classList.toggle('limit', len >= MAX_NAME_LEN);
-});
-
-document.getElementById('rename-back').addEventListener('click', () => {
-    state.renameId = null;
-    renderWorlds();
-    showScreen('worlds');
-});
-
-document.getElementById('finish-rename').addEventListener('click', () => {
-    const world = state.worlds.find(w => w.id === state.renameId);
-    if (!world) { showScreen('worlds'); return; }
-    const newName = (inputRename.value.trim() || world.name).slice(0, MAX_NAME_LEN);
-    world.name = newName;
-    state.renameId = null;
-    showToast('Мир переименован');
-    renderWorlds();
-    showScreen('worlds');
-});
-
-// ============ ENTER = как "далее"/"создать" ============
-inputName.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') document.getElementById('next-to-desc').click();
-});
-inputDesc.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    form.addEventListener('submit', function (e) {
         e.preventDefault();
-        document.getElementById('finish-create').click();
-    }
-});
-inputRename.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') document.getElementById('finish-rename').click();
-});
+        successBox.style.display = 'block';
+        form.reset();
+        filePreview.textContent = 'Файл не выбран';
+        successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+})();
 
-// ============ ИНИЦИАЛИЗАЦИЯ ============
-renderWorlds();
+/* =============== КАЛЬКУЛЯТОР =============== */
+(function () {
+    var btn = document.getElementById('calculate-btn');
+    var sel = document.getElementById('clothing-type');
+    var countInput = document.getElementById('clothing-count');
+    var results = document.getElementById('calc-results');
+    var resItems = document.getElementById('res-items');
+
+    btn.addEventListener('click', function () {
+        var weightPerItem = parseInt(sel.value, 10) || 0;      // граммы
+        var count = parseInt(countInput.value, 10) || 0;        // штук
+        if (count < 1) { count = 1; countInput.value = 1; }
+        if (count > 100) { count = 100; countInput.value = 100; }
+
+        var totalGrams = weightPerItem * count;
+
+        // Прихватка ~ 30 г ткани
+        var items = Math.floor(totalGrams / 30);
+
+        resItems.textContent = items;
+        results.style.display = 'block';
+    });
+})();
+</script>
+
+</body>
+</html>
