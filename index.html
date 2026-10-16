@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Магия — Меню</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Фоновые слои для магического вайба -->
+    <div class="bg-stars"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+    <canvas id="particles"></canvas>
+
+    <!-- Меню -->
+    <main class="menu">
+        <div class="menu-frame">
+            <h1 class="menu-title">Магия</h1>
+            <p class="menu-subtitle">частицы · зёрна · текст</p>
+
+            <div class="menu-buttons">
+                <button class="magic-btn" data-action="visualize">
+                    <span class="btn-glow"></span>
+                    <span class="btn-text">Визуализация</span>
+                </button>
+                <button class="magic-btn" data-action="edit">
+                    <span class="btn-glow"></span>
+                    <span class="btn-text">Редакция</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
